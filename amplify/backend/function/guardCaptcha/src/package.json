@@ -1,0 +1,7 @@
+{
+  "name": "guard-captcha-function",
+  "version": "1.0.0",
+  "description": "AWS Amplify Serverless Function for Slider CAPTCHA and Anti-Bot Verification",
+  "main": "index.js",
+  "dependencies": {}
+}

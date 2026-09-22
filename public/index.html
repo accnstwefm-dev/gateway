@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guard — Anti-Bot & Slider CAPTCHA Shield</title>
+  <link rel="stylesheet" href="/captcha.css">
+</head>
+<body>
+
+  <main class="guard-container">
+    <header class="guard-header">
+      <div class="guard-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+        Guard Shield Active
+      </div>
+      <h1 class="guard-title">Human Verification</h1>
+      <p class="guard-subtitle">
+        Slide the puzzle piece to complete the verification before accessing protected resources.
+      </p>
+    </header>
+
+    <!-- Interactive CAPTCHA Mount Point -->
+    <section id="captcha-container" aria-label="Slider Puzzle Challenge"></section>
+
+    <!-- Protected Content Section (Revealed upon pass) -->
+    <section id="protected-content" class="protected-content-box" aria-live="polite">
+      <div class="protected-badge">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+        </svg>
+        Human Verified &amp; Authorized
+      </div>
+      <p class="protected-info" id="protected-msg">
+        Fetching guarded resource...
+      </p>
+      <pre id="token-preview" style="text-align:left; background:rgba(0,0,0,0.4); padding:10px; border-radius:6px; font-size:11px; overflow-x:auto; margin-bottom:14px; color:#6ee7b7;"></pre>
+      <button type="button" class="reset-btn" id="retest-btn">Verify Again</button>
+    </section>
+  </main>
+
+  <script src="/captcha.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const protectedBox = document.getElementById('protected-content');
+      const protectedMsg = document.getElementById('protected-msg');
+      const tokenPreview = document.getElementById('token-preview');
+      const retestBtn = document.getElementById('retest-btn');
+      const captchaContainer = document.getElementById('captcha-container');
+
+      // Configure your destination URL here:
+      // If set, verified users are automatically redirected to this URL upon solving the puzzle.
+      // If left empty (""), it displays the in-page verification success card.
+      const DESTINATION_URL = ''; 
+
+      let captcha = new SliderCaptcha({
+        containerId: 'captcha-container',
+        apiBase: '/api/captcha',
+        onSuccess: async (data) => {
+          // 1. If a destination URL is configured, redirect immediately
+          if (DESTINATION_URL && DESTINATION_URL.trim() !== '') {
+            window.location.href = DESTINATION_URL;
+            return;
+          }
+
+          // 2. Default demonstration: fetch and display protected content in-page
+          try {
+            const res = await fetch('/api/protected/content', {
+              headers: {
+                'x-captcha-token': data.passToken
+              }
+            });
+            const protectedData = await res.json();
+            
+            if (res.ok) {
+              captchaContainer.style.display = 'none';
+              protectedBox.style.display = 'block';
+              protectedMsg.textContent = protectedData.message;
+              tokenPreview.textContent = JSON.stringify({
+                status: 'PASSED',
+                session: protectedData.protectedData,
+                tokenExpiresIn: `${data.expiresIn} seconds`
+              }, null, 2);
+            } else {
+              protectedMsg.textContent = 'Verification check failed on protected endpoint.';
+            }
+          } catch (err) {
+            protectedMsg.textContent = 'Error connecting to protected server.';
+          }
+        },
+        onError: (err) => {
+          console.warn('Captcha failed or rejected:', err);
+        }
+      });
+
+      retestBtn.addEventListener('click', () => {
+        protectedBox.style.display = 'none';
+        captchaContainer.style.display = 'block';
+        captcha.loadChallenge();
+      });
+    });
+  </script>
+</body>
+</html>

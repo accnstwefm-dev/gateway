@@ -1,0 +1,4 @@
+node_modules/
+.captcha-secret
+.DS_Store
+Thumbs.db
