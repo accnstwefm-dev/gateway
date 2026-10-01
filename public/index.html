@@ -50,18 +50,16 @@
       const retestBtn = document.getElementById('retest-btn');
       const captchaContainer = document.getElementById('captcha-container');
 
-      // Configure your destination URL here:
-      // If set, verified users are automatically redirected to this URL upon solving the puzzle.
-      // If left empty (""), it displays the in-page verification success card.
-      const DESTINATION_URL = 'https://example.com'; 
+      // The destination URL is configured server-side only (REDIRECT_URL env var on the
+      // Lambda / server). It is never hardcoded here, so it never appears in page source.
 
       let captcha = new SliderCaptcha({
         containerId: 'captcha-container',
         apiBase: '/api/captcha',
         onSuccess: async (data) => {
-          // 1. If a destination URL is configured, redirect immediately
-          if (DESTINATION_URL && DESTINATION_URL.trim() !== '') {
-            window.location.href = DESTINATION_URL;
+          // 1. If the server sent a redirect URL after verifying, use it immediately
+          if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
             return;
           }
 
@@ -104,3 +102,4 @@
   </script>
 </body>
 </html>
+
